@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>PomoFocus - Premium Pomodoro & Odaklanma Uygulaması</title>
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons (CDN) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- CSS Dosyası -->
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body class="theme-pomodoro">
+  <div class="app-background-glow"></div>
+  <canvas id="bg-canvas"></canvas>
+  
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo">
+        <div class="logo-icon">
+          <i data-lucide="clock"></i>
+        </div>
+        <h1>PomoFocus</h1>
+      </div>
+      
+      <!-- Seviye ve XP İlerleme Çubuğu + Coin Bakiyesi -->
+      <div class="xp-level-container" title="Seviyeniz ve XP İlerlemeniz">
+        <div class="level-badge" id="display-level">Lvl 1</div>
+        <div class="xp-progress-bar-wrapper">
+          <div class="xp-progress-bar" id="display-xp-bar" style="width: 0%;"></div>
+          <span id="display-xp-text">0 / 500 XP</span>
+        </div>
+      </div>
+      <div class="coin-badge" title="Pomo Coins (Altın Domates Parası)">
+        <span>🪙</span>
+        <span id="display-coins">0</span>
+      </div>
+
+      <div class="header-actions">
+        <button id="btn-tasks-toggle" class="icon-btn mobile-only-task-btn" title="Görevler">
+          <i data-lucide="check-square"></i>
+        </button>
+        <button id="btn-profile" class="icon-btn profile-btn-glow" title="Profilim">
+          <i data-lucide="user"></i>
+        </button>
+        <button id="btn-settings" class="icon-btn" title="Ayarlar">
+          <i data-lucide="settings"></i>
+        </button>
+        <button id="btn-app-menu" class="icon-btn menu-btn-glow" title="Tüm Menü & Özellikler">
+          <i data-lucide="grid"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Ana İçerik Alanı -->
+    <main class="app-main">
+      <!-- Sayaç Bölümü (Sol / Orta) -->
+      <section class="timer-section">
+        <div class="timer-card glass">
+          <!-- Odak Boss Savaşı Kartı -->
+          <div id="boss-battle-card" class="boss-battle-card">
+            <div class="boss-avatar" id="boss-avatar">🐉</div>
+            <div class="boss-info">
+              <div class="boss-header-row">
+                <span class="boss-name" id="boss-name">Erteleme Ejderhası (Lvl 1 Boss)</span>
+                <span class="boss-hp-text" id="boss-hp-text">100 / 100 HP</span>
+              </div>
+              <div class="boss-hp-track">
+                <div class="boss-hp-fill" id="boss-hp-fill" style="width: 100%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mod Seçiciler -->
+          <div class="mode-selectors">
+            <button id="mode-pomodoro" class="mode-btn active" data-mode="pomodoro">Odaklanma</button>
+            <button id="mode-short" class="mode-btn" data-mode="short">Kısa Mola</button>
+            <button id="mode-long" class="mode-btn" data-mode="long">Uzun Mola</button>
+          </div>
+
+          <!-- Dairesel Sayaç -->
+          <div class="timer-circle-container">
+            <svg class="timer-svg" viewBox="0 0 200 200">
+              <circle class="timer-track" cx="100" cy="100" r="88" />
+              <circle id="timer-progress" class="timer-progress" cx="100" cy="100" r="88" stroke-dasharray="552.92" stroke-dashoffset="0" />
+            </svg>
+            <div class="timer-display-content">
+              <span id="timer-time">25:00</span>
+              <span id="timer-status">Odaklanma Zamanı</span>
+            </div>
+          </div>
+
+          <!-- Pomo-Pet Evcil Hayvan Kapsayıcısı -->
+          <div id="pomo-pet-wrapper" class="pomo-pet-wrapper">
+            <div id="pomo-pet-container" class="pomo-pet-container"></div>
+            <span id="pomo-pet-speech" class="pomo-pet-speech hidden">Merhaba! Hazırsan odaklanalım.</span>
+          </div>
+
+          <!-- Aktif Görev Bilgisi -->
+          <div class="active-task-display">
+            <p class="active-task-label">Şu an odaklanılan görev:</p>
+            <h3 id="active-task-title">Bir görev seçin veya ekleyin</h3>
+          </div>
+
+          <!-- Kontrol Butonları -->
+          <div class="timer-controls">
+            <button id="btn-reset" class="control-btn secondary" title="Sıfırla">
+              <i data-lucide="rotate-ccw"></i>
+            </button>
+            <button id="btn-play-pause" class="control-btn primary" title="Başlat">
+              <i data-lucide="play" id="play-icon"></i>
+              <i data-lucide="pause" id="pause-icon" class="hidden"></i>
+            </button>
+            <button id="btn-skip" class="control-btn secondary" title="Atla">
+              <i data-lucide="skip-forward"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Lo-Fi Radyo Oynatıcısı -->
+        <div class="lofi-radio-card glass">
+          <div class="radio-header">
+            <h4><i data-lucide="radio"></i> Lo-Fi Odaklanma Radyosu</h4>
+            <span id="radio-station-name" class="radio-status">Kapalı</span>
+          </div>
+          <div class="radio-controls">
+            <button id="btn-radio-prev" class="radio-btn-small" title="Önceki İstasyon">
+              <i data-lucide="skip-back"></i>
+            </button>
+            <button id="btn-radio-play" class="radio-btn-play" title="Oynat / Durdur">
+              <i data-lucide="play" id="radio-play-icon"></i>
+              <i data-lucide="pause" id="radio-pause-icon" class="hidden"></i>
+            </button>
+            <button id="btn-radio-next" class="radio-btn-small" title="Sonraki İstasyon">
+              <i data-lucide="skip-forward"></i>
+            </button>
+            <div class="radio-volume-container">
+              <i data-lucide="volume-1"></i>
+              <input type="range" id="radio-volume" min="0" max="1" step="0.05" value="0.5" title="Ses Seviyesi">
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Görev Yönetimi Bölümü (Sağ) -->
+      <section class="tasks-section">
+        <div class="tasks-card glass">
+          <div class="tasks-header">
+            <h3><i data-lucide="check-square"></i> Görevler</h3>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="tasks-counter" class="tasks-counter">0 / 0</span>
+              <button id="close-tasks-mobile" class="modal-close mobile-only-close" title="Kapat">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Yeni Görev Girişi -->
+          <form id="task-form" class="task-form">
+            <input type="text" id="task-input" placeholder="Yapılacak bir şey ekleyin..." required autocomplete="off">
+            <div class="task-category-selector" title="Kategori Seç">
+              <select id="task-category-input">
+                <option value="work">Çalışma 💼</option>
+                <option value="code">Kodlama 💻</option>
+                <option value="reading">Okuma 📚</option>
+                <option value="personal">Kişisel 🏠</option>
+              </select>
+            </div>
+            <div class="task-target-selector" title="Hedef Domates Sayısı">
+              <select id="task-target-input">
+                <option value="1">1 🍅</option>
+                <option value="2">2 🍅</option>
+                <option value="3">3 🍅</option>
+                <option value="4">4 🍅</option>
+                <option value="5">5 🍅</option>
+              </select>
+            </div>
+            <div class="task-priority-selector" title="Görev Önceliği">
+              <select id="task-priority-input">
+                <option value="low">🟢 Düşük</option>
+                <option value="medium">🟡 Orta</option>
+                <option value="high">🔴 Yüksek</option>
+              </select>
+            </div>
+            <button type="button" id="btn-ai-split" class="ai-split-btn" title="Görevi Akıllı Pomodoro Seanslarına Ayrıştır 🪄">
+              <i data-lucide="wand-2"></i>
+            </button>
+            <button type="submit" class="add-task-btn" title="Görev Ekle">
+              <i data-lucide="plus"></i>
+            </button>
+          </form>
+
+          <!-- Görev Listesi -->
+          <div class="tasks-list-container">
+            <ul id="tasks-list" class="tasks-list">
+              <!-- Görevler JS tarafından buraya eklenecek -->
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- İstatistikler Modalı -->
+    <div id="modal-stats" class="modal-overlay hidden">
+      <div class="modal-content glass">
+        <div class="modal-header">
+          <h2><i data-lucide="bar-chart-2"></i> Odaklanma İstatistikleri</h2>
+          <button class="modal-close" id="close-stats"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="stats-summary-grid">
+            <div class="stat-card">
+              <div class="stat-icon focus"><i data-lucide="book-open"></i></div>
+              <div class="stat-info">
+                <span class="stat-value" id="stat-total-focus">0 dk</span>
+                <span class="stat-label">Toplam Odaklanma</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon pomicons"><i data-lucide="check-circle"></i></div>
+              <div class="stat-info">
+                <span class="stat-value" id="stat-pomodoros">0</span>
+                <span class="stat-label">Tamamlanan Pomo</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon streak"><i data-lucide="award"></i></div>
+              <div class="stat-info">
+                <span class="stat-value" id="stat-streak">0 Gün</span>
+                <span class="stat-label">Mevcut Seri (Streak)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Kategori Dağılım Donut Grafik ve Son 7 Gün Grafiği -->
+          <div class="stats-visuals-grid">
+            <!-- SVG İstatistik Grafiği (Sol) -->
+            <div class="chart-container">
+              <h3>Son 7 Günün İstatistiği (dakika)</h3>
+              <div class="chart-wrapper">
+                <svg id="stats-chart" width="100%" height="200" viewBox="0 0 500 200" preserveAspectRatio="none">
+                  <!-- Grid çizgileri JS ile oluşturulacak -->
+                </svg>
+              </div>
+            </div>
+
+            <!-- SVG Pasta Grafik (Sağ) -->
+            <div class="chart-container donut-chart-container">
+              <h3>Kategori Dağılımı (dakika)</h3>
+              <div class="chart-wrapper donut-wrapper">
+                <svg id="donut-chart" viewBox="0 0 200 200" width="100%" height="100%">
+                  <!-- Donut halkaları JS ile eklenecek -->
+                </svg>
+                <div id="donut-legend" class="donut-legend">
+                  <!-- Kategori süreleri JS ile listelenecek -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GitHub Usulü 365 Günlük Odaklanma Haritası (Heatmap) -->
+          <div class="stats-heatmap-section">
+            <h3><i data-lucide="calendar"></i> 365 Günlük Odaklanma Haritası (Focus Heatmap)</h3>
+            <div id="focus-heatmap-wrapper" class="focus-heatmap-wrapper">
+              <!-- JS ile 53 haftalık grid matrisi doldurulacak -->
+            </div>
+            <div class="heatmap-legend">
+              <span>Az</span>
+              <div class="legend-box level-0"></div>
+              <div class="legend-box level-1"></div>
+              <div class="legend-box level-2"></div>
+              <div class="legend-box level-3"></div>
+              <div class="legend-box level-4"></div>
+              <span>Çok</span>
+            </div>
+          </div>
+
+          <!-- Başarımlar (Achievements) Alanı -->
+          <div class="achievements-section">
+            <h3>Başarımlar ve Rozetler</h3>
+            <div class="achievements-grid" id="achievements-container">
+              <!-- Başarımlar JS ile doldurulacak -->
+            </div>
+          </div>
+          
+          <div class="modal-footer">
+            <button id="btn-reset-stats" class="danger-btn">Verileri Sıfırla</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ayarlar Modalı -->
+    <div id="modal-settings" class="modal-overlay hidden">
+      <div class="modal-content glass">
+        <div class="modal-header">
+          <h2><i data-lucide="settings"></i> Ayarlar</h2>
+          <button class="modal-close" id="close-settings"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <!-- Tema Ayarları -->
+          <div class="settings-section">
+            <h3>Tema Seçimi</h3>
+            <div class="setting-group">
+              <label for="select-theme">Arayüz Teması</label>
+              <select id="select-theme">
+                <option value="pomodoro">Varsayılan (Dinamik)</option>
+                <option value="cyberpunk">Cyberpunk Neon 🌌</option>
+                <option value="sakura">Sakura Pink 🌸</option>
+                <option value="nordic">Nordic Forest 🌲</option>
+                <option value="oled">OLED Midnight 🌑</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Süre Ayarları -->
+          <div class="settings-section">
+            <h3>Süre Ayarları (Dakika)</h3>
+            <div class="setting-group">
+              <label for="input-pomodoro">Odaklanma Süresi</label>
+              <div class="range-input-wrapper">
+                <input type="range" id="input-pomodoro" min="5" max="60" step="5" value="25">
+                <span id="val-pomodoro">25 dk</span>
+              </div>
+            </div>
+            <div class="setting-group">
+              <label for="input-short">Kısa Mola Süresi</label>
+              <div class="range-input-wrapper">
+                <input type="range" id="input-short" min="1" max="30" step="1" value="5">
+                <span id="val-short">5 dk</span>
+              </div>
+            </div>
+            <div class="setting-group">
+              <label for="input-long">Uzun Mola Süresi</label>
+              <div class="range-input-wrapper">
+                <input type="range" id="input-long" min="5" max="45" step="5" value="15">
+                <span id="val-long">15 dk</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Otomatik Başlatma Ayarları -->
+          <div class="settings-section">
+            <h3>Otomasyon</h3>
+            <div class="setting-row">
+              <span>Molaları Otomatik Başlat</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="chk-auto-break">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="setting-row">
+              <span>Odaklanmayı Otomatik Başlat</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="chk-auto-focus">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Bildirim & Asistan Ayarları -->
+          <div class="settings-section">
+            <h3>Bildirimler & Asistan</h3>
+            <div class="setting-row">
+              <span>Masaüstü Bildirimleri</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="chk-notifications">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="setting-row">
+              <span>Sesli Rehber Asistanı (TR)</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="chk-voice-assistant">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Ses Ayarları -->
+          <div class="settings-section">
+            <h3>Bitiş Alarmı Ses Düzeyi</h3>
+            <div class="setting-group">
+              <div class="range-input-wrapper">
+                <i data-lucide="volume-2"></i>
+                <input type="range" id="input-alarm-volume" min="0" max="1" step="0.1" value="0.8">
+                <span id="val-alarm-volume">80%</span>
+              </div>
+            </div>
+            <div class="setting-group">
+              <label for="select-alarm-sound">Alarm Tonu</label>
+              <select id="select-alarm-sound">
+                <option value="digital">Digital Beep (Modern)</option>
+                <option value="bell">Tibetan Bell (Rahatlatıcı)</option>
+                <option value="melodic">Melodic Chime (Melodik)</option>
+                <option value="pulse">Soft Pulse (Yumuşak Darbe)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pomo-Pet Evi Modalı -->
+  <div id="modal-pet" class="modal-overlay hidden">
+    <div class="modal-content pet-house-modal">
+      <div class="modal-header">
+        <h2><i data-lucide="heart"></i> Pomo-Pet Evi</h2>
+        <button class="modal-close" id="close-pet"><i data-lucide="x"></i></button>
+      </div>
+      <div class="pet-house-body">
+        <!-- Sol: Pet Görsel Alanı -->
+        <div class="pet-house-showcase room-cosmic" id="pet-house-showcase">
+          <!-- Player Unvan Rozeti -->
+          <div class="player-title-badge" id="player-title-badge">
+            <span id="player-title-text">🌱 Odaklanma Çaylağı</span>
+          </div>
+
+          <!-- Oda Tema Seçici Bar -->
+          <div class="room-theme-selector">
+            <button class="room-theme-btn active" data-theme="cosmic" title="Kozmik Oda 🌌">🌌 Kozmik</button>
+            <button class="room-theme-btn" data-theme="zen" title="Zen Bahçesi 🎍">🎍 Zen</button>
+            <button class="room-theme-btn" data-theme="cafe" title="Sıcak Kafe ☕">☕ Kafe</button>
+            <button class="room-theme-btn" data-theme="beach" title="Tropik Sahil 🏖️">🏖️ Sahil</button>
+          </div>
+
+          <div class="pet-showcase-stage">
+            <div id="pet-house-display" class="pet-house-display"></div>
+            <span id="pet-house-speech" class="pet-house-speech"></span>
+          </div>
+
+          <div class="pet-info-bar">
+            <span id="pet-stage-name" class="pet-stage-name">Tohum 🌱</span>
+            <span id="pet-level-badge" class="pet-level-badge">Lvl 1</span>
+          </div>
+
+          <!-- Pet Mutluluk Barı & Besle Butonu -->
+          <div class="pet-happiness-area">
+            <div class="happiness-bar-wrapper">
+              <span class="happiness-label">Mutluluk:</span>
+              <div class="happiness-bar-track">
+                <div class="happiness-bar-fill" id="happiness-bar-fill" style="width: 100%;"></div>
+              </div>
+              <span id="happiness-val-text" class="happiness-val-text">100%</span>
+            </div>
+            <div class="pet-action-buttons">
+              <button id="btn-pet-love" class="pet-love-btn">
+                <i data-lucide="heart"></i> Sevgi
+              </button>
+              <button id="btn-feed-pet" class="pet-feed-btn">
+                <i data-lucide="apple"></i> Besle 🍎
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sağ: Evrim Ağacı + Günlük Görevler & Sandık + Aksesuar Dolabı -->
+        <div class="pet-house-panels">
+          <!-- Günlük Görevler & Sürpriz Sandık Panel -->
+          <div class="pet-panel quest-panel">
+            <div class="quest-panel-header">
+              <h3><i data-lucide="gift"></i> Günlük Görevler & Hazine Sandığı</h3>
+              <span id="daily-quest-timer" class="quest-timer-badge">Yenilenme: --:--</span>
+            </div>
+            
+            <div class="daily-quests-list" id="daily-quests-list">
+              <!-- JS ile yüklenecek -->
+            </div>
+
+            <div class="mystery-chest-area">
+              <div id="mystery-chest" class="mystery-chest locked" title="Tüm günlük görevleri tamamlayarak sandığı aç!">
+                <div class="chest-icon-wrapper">
+                  <span class="chest-emoji">🎁</span>
+                  <div class="chest-sparkles"></div>
+                </div>
+                <div class="chest-info">
+                  <span class="chest-title" id="chest-status-text">Hazine Sandığı (Kilitli)</span>
+                  <span class="chest-subtext" id="chest-subtext">3/0 Görev Tamamlandı</span>
+                </div>
+                <button id="btn-claim-chest" class="claim-chest-btn hidden">
+                  <i data-lucide="sparkles"></i> Sandığı Aç!
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Evrim Ağacı -->
+          <div class="pet-panel">
+            <h3><i data-lucide="git-branch"></i> Evrim Ağacı</h3>
+            <div id="pet-evolution-tree" class="pet-evolution-tree"></div>
+          </div>
+
+          <!-- Aksesuar Dolabı -->
+          <div class="pet-panel">
+            <h3><i data-lucide="shirt"></i> Kozmetik Dolabı</h3>
+            <div id="pet-accessory-grid" class="pet-accessory-grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pomo-Mağaza Modalı -->
+  <div id="modal-shop" class="modal-overlay hidden">
+    <div class="modal-content shop-modal glass">
+      <div class="modal-header">
+        <h2><i data-lucide="shopping-bag"></i> Pomo-Mağaza (Güçlendirmeler)</h2>
+        <div class="shop-balance-badge">
+          <span>🪙</span> <span id="shop-coin-balance">0</span>
+        </div>
+        <button class="modal-close" id="close-shop"><i data-lucide="x"></i></button>
+      </div>
+      <div class="shop-body">
+        <div class="shop-grid">
+          <div class="shop-card" data-item="magnet">
+            <div class="shop-item-icon">🧲</div>
+            <div class="shop-item-info">
+              <span class="shop-item-title">Domates Mıknatısı</span>
+              <span class="shop-item-desc">Domates Yakalama oyununda düşen domatesleri sepete çeker.</span>
+            </div>
+            <button class="buy-item-btn" data-item="magnet" data-cost="100">
+              🪙 100 Coin
+            </button>
+          </div>
+
+          <div class="shop-card" data-item="shield">
+            <div class="shop-item-icon">🛡️</div>
+            <div class="shop-item-info">
+              <span class="shop-item-title">Bomba Kalkanı</span>
+              <span class="shop-item-desc">Mini-oyunda sizi 1 bombalı patlamadan tamamen korur.</span>
+            </div>
+            <button class="buy-item-btn" data-item="shield" data-cost="150">
+              🪙 150 Coin
+            </button>
+          </div>
+
+          <div class="shop-card" data-item="timewarp">
+            <div class="shop-item-icon">⏳</div>
+            <div class="shop-item-info">
+              <span class="shop-item-title">Zaman Bükücü</span>
+              <span class="shop-item-desc">Mini-oyun süresini 30s yerine 40s yapar. (+10 saniye)</span>
+            </div>
+            <button class="buy-item-btn" data-item="timewarp" data-cost="200">
+              🪙 200 Coin
+            </button>
+          </div>
+
+          <div class="shop-card" data-item="doublexp">
+            <div class="shop-item-icon">⚡</div>
+            <div class="shop-item-info">
+              <span class="shop-item-title">2x XP İksiri</span>
+              <span class="shop-item-desc">Seans ve oyunlardan 1 saat boyunca 2 kat XP kazandırır!</span>
+            </div>
+            <button class="buy-item-btn" data-item="doublexp" data-cost="300">
+              🪙 300 Coin
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arcade Mini-Oyun Merkezi Modalı -->
+  <div id="modal-minigame" class="modal-overlay hidden">
+    <div class="modal-content minigame-modal glass">
+      <div class="modal-header">
+        <h2><i data-lucide="gamepad-2"></i> Pomo Arcade Oyun Merkezi</h2>
+        <button class="modal-close" id="close-minigame"><i data-lucide="x"></i></button>
+      </div>
+
+      <!-- Oyun Modu Seçici Sekmeler -->
+      <div class="game-mode-tabs">
+        <button class="game-tab-btn active" id="tab-catch-tomato">
+          🧺 Domates Yakalama
+        </button>
+        <button class="game-tab-btn" id="tab-flappy-space">
+          🚀 Astro Flappy Space
+        </button>
+        <button class="game-tab-btn" id="tab-pomo-slice">
+          ⚔️ Pomo-Slice Dilimleme
+        </button>
+      </div>
+
+      <div class="minigame-body">
+        <div class="game-hud">
+          <div class="hud-item">
+            <span class="hud-label">Skor</span>
+            <span id="game-score" class="hud-value">0</span>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">Kalan Süre / Durum</span>
+            <span id="game-timer" class="hud-value highlight">30s</span>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">En Yüksek</span>
+            <span id="game-highscore" class="hud-value">0</span>
+          </div>
+        </div>
+
+        <div id="game-canvas-container" class="game-canvas-container">
+          <canvas id="game-canvas" width="400" height="400"></canvas>
+          <div id="game-overlay" class="game-overlay">
+            <div class="overlay-card">
+              <h3 id="overlay-title">🍅 Domatesleri Yakala!</h3>
+              <p id="overlay-desc">30 saniye içinde düşen domates ve yıldızları topla, bombalara dikkat et!</p>
+              <button id="btn-start-game" class="start-game-btn">
+                <i data-lucide="play"></i> Oyunu Başlat
+              </button>
+            </div>
+          </div>
+        </div>
+        <p class="game-controls-tip" id="game-controls-tip">💡 İpucu: Sepeti hareket ettirmek için parmağınızı/farenizi sağa sola sürükleyin!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mola Egzersizleri & 20-20-20 Göz Dinlendirme Modalı -->
+  <div id="modal-wellness" class="modal-overlay hidden">
+    <div class="modal-content wellness-modal glass">
+      <div class="modal-header">
+        <h2><i data-lucide="smile"></i> Mola Egzersizleri & Göz Dinlendirme Rehberi</h2>
+        <button class="modal-close" id="close-wellness"><i data-lucide="x"></i></button>
+      </div>
+      <div class="wellness-body">
+        <!-- 20-20-20 Göz Egzersizi -->
+        <div class="wellness-section">
+          <h3>👁️ 20-20-20 Göz Dinlendirme Kuralı</h3>
+          <p>Her 20 dakikada bir, 20 fit (6 metre) uzaklıktaki bir nesneye 20 saniye boyunca bakın.</p>
+          <div class="eye-timer-box">
+            <div class="eye-timer-circle" id="eye-timer-circle">20</div>
+            <button id="btn-start-eye-rest" class="start-eye-btn">
+              <i data-lucide="eye"></i> 20 Saniyelik Dinlendirmeyi Başlat
+            </button>
+          </div>
+        </div>
+
+        <!-- 1 Dakikalık Masa Başı Esneme Hareketleri -->
+        <div class="wellness-section">
+          <h3>🧘 1 Dakikalık Masa Başı Esneme Hareketleri</h3>
+          <div class="stretch-steps-grid">
+            <div class="stretch-card">
+              <span class="stretch-icon">🧘‍♂️</span>
+              <span class="stretch-title">1. Boyun Esnetme</span>
+              <p class="stretch-desc">Başınızı yavaşça sağa ve sola eğerek 10 saniye tutun.</p>
+            </div>
+            <div class="stretch-card">
+              <span class="stretch-icon">🙆‍♂️</span>
+              <span class="stretch-title">2. Omuz Çevirme</span>
+              <p class="stretch-desc">Omuzlarınızı geriye doğru 10 kez dairesel şekilde çevirin.</p>
+            </div>
+            <div class="stretch-card">
+              <span class="stretch-icon">🙋‍♂️</span>
+              <span class="stretch-title">3. Sırt Uzanması</span>
+              <p class="stretch-desc">Kollarınızı yukarı kenetleyip gökyüzüne doğru uzanın.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Günlük Pomodoro Şans Çarkı Modalı -->
+  <div id="modal-wheel" class="modal-overlay hidden">
+    <div class="modal-content wheel-modal glass">
+      <div class="modal-header">
+        <h2><i data-lucide="sparkles"></i> Günlük Pomodoro Şans Çarkı</h2>
+        <button class="modal-close" id="close-wheel"><i data-lucide="x"></i></button>
+      </div>
+      <div class="wheel-body">
+        <div class="wheel-container">
+          <div class="wheel-pointer">▼</div>
+          <canvas id="wheel-canvas" width="280" height="280"></canvas>
+        </div>
+        <button id="btn-spin-wheel" class="spin-wheel-btn">
+          🎲 Çarkı Çevir!
+        </button>
+        <span id="wheel-status-text" class="wheel-status-text">Her gün 1 ücretsiz çevirme hakkı! 🎁</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profilim Modalı -->
+  <div id="modal-profile" class="modal-overlay hidden">
+    <div class="modal-content profile-modal glass">
+      <div class="modal-header">
+        <h2><i data-lucide="user"></i> Profilim</h2>
+        <button class="modal-close" id="close-profile"><i data-lucide="x"></i></button>
+      </div>
+      <div class="profile-body">
+        <div class="profile-card-header">
+          <div class="profile-avatar-wrapper" id="profile-avatar-display">
+            👤
+          </div>
+          <div class="profile-user-info">
+            <h3 id="profile-display-name">Kullanıcı Adı</h3>
+            <span id="profile-display-email" class="profile-email">email@example.com</span>
+            <div class="profile-badges-row">
+              <span id="profile-display-level" class="level-badge">Lvl 1</span>
+              <span id="profile-display-title" class="player-title-badge">🌱 Odaklanma Çaylağı</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit Profile Form -->
+        <form id="form-edit-profile" class="edit-profile-form">
+          <div class="setting-group">
+            <label for="edit-profile-name">Ad Soyad</label>
+            <input type="text" id="edit-profile-name" required>
+          </div>
+          <div class="setting-group">
+            <label for="edit-profile-bio">Kişisel Biyo / Hedef</label>
+            <input type="text" id="edit-profile-bio" placeholder="Bugün hangi hedefe odaklanıyorsun?">
+          </div>
+          <button type="submit" class="save-profile-btn">
+            <i data-lucide="save"></i> Değişiklikleri Kaydet
+          </button>
+        </form>
+
+        <!-- Account Stats Summary -->
+        <div class="profile-stats-grid">
+          <div class="pstat-item">
+            <span class="pstat-label">Toplam Odaklanma</span>
+            <span id="pstat-total-focus" class="pstat-value">0 dk</span>
+          </div>
+          <div class="pstat-item">
+            <span class="pstat-label">Tamamlanan Pomo</span>
+            <span id="pstat-pomos" class="pstat-value">0</span>
+          </div>
+          <div class="pstat-item">
+            <span class="pstat-label">Pomo Coins 🪙</span>
+            <span id="pstat-coins" class="pstat-value">0</span>
+          </div>
+        </div>
+
+        <!-- Logout Button -->
+        <div class="profile-logout-area">
+          <button id="btn-logout" class="logout-btn">
+            <i data-lucide="log-out"></i> Çıkış Yap
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ayrı Özellikler & Tüm Menü Modalı (App Features Hub) -->
+  <div id="modal-app-menu" class="modal-overlay hidden">
+    <div class="modal-card menu-modal-card glass">
+      <div class="modal-header">
+        <div class="menu-modal-brand">
+          <i data-lucide="grid" class="menu-brand-icon"></i>
+          <h2>PomoFocus Menü & Özellikler</h2>
+        </div>
+        <button id="close-app-menu" class="modal-close"><i data-lucide="x"></i></button>
+      </div>
+
+      <div class="modal-body menu-modal-body">
+        <!-- Kullanıcı Özet Kartı -->
+        <div class="menu-user-summary-card glass">
+          <div class="menu-user-avatar" id="menu-avatar-display">👤</div>
+          <div class="menu-user-details">
+            <div class="menu-user-name-row">
+              <span id="menu-user-name" class="menu-user-name">Odaklanma Avcısı</span>
+              <span id="menu-user-level" class="menu-level-badge">Lvl 1</span>
+            </div>
+            <span id="menu-user-title" class="menu-user-title">🌱 Odaklanma Çaylağı</span>
+          </div>
+        </div>
+
+        <!-- Özellikler Izgarası (Listelenen Menü Elemanları) -->
+        <div class="menu-features-grid">
+          <div class="menu-feature-item" id="mitem-pet">
+            <div class="mitem-icon pet-bg"><i data-lucide="heart"></i></div>
+            <div class="mitem-info">
+              <h4>Pomo-Pet Evi</h4>
+              <p>Evcil hayvanını besle, büyüt ve oda temasını değiştir</p>
+            </div>
+            <span class="mitem-badge">🐱 Canlı Pet</span>
+          </div>
+
+          <div class="menu-feature-item" id="mitem-shop">
+            <div class="mitem-icon shop-bg"><i data-lucide="shopping-bag"></i></div>
+            <div class="mitem-info">
+              <h4>Pomo-Mağaza</h4>
+              <p>Altın domateslerinle iksirler ve oda temaları satın al</p>
+            </div>
+            <span class="mitem-badge">🪙 Market</span>
+          </div>
+
+          <div class="menu-feature-item" id="mitem-minigame">
+            <div class="mitem-icon game-bg"><i data-lucide="gamepad-2"></i></div>
+            <div class="mitem-info">
+              <h4>Arcade Mini Oyunlar</h4>
+              <p>Mola vakitlerinde Domates Yakala, Flappy ve Slice oyna</p>
+            </div>
+            <span class="mitem-badge">🎮 3 Oyun</span>
+          </div>
+
+          <div class="menu-feature-item" id="mitem-wheel">
+            <div class="mitem-icon wheel-bg"><i data-lucide="sparkles"></i></div>
+            <div class="mitem-info">
+              <h4>Günlük Şans Çarkı</h4>
+              <p>Her gün 1 ücretsiz çevirme hakkı ile sürpriz ödüller kazan</p>
+            </div>
+            <span class="mitem-badge">🎁 Günlük Çark</span>
+          </div>
+
+          <div class="menu-feature-item" id="mitem-wellness">
+            <div class="mitem-icon wellness-bg"><i data-lucide="smile"></i></div>
+            <div class="mitem-info">
+              <h4>Wellness & Dinlenme</h4>
+              <p>20 saniyelik göz dinlendirme ve mola egzersizleri</p>
+            </div>
+            <span class="mitem-badge">🧘 Göz Sağlığı</span>
+          </div>
+
+          <div class="menu-feature-item" id="mitem-stats">
+            <div class="mitem-icon stats-bg"><i data-lucide="bar-chart-2"></i></div>
+            <div class="mitem-info">
+              <h4>İstatistikler & Grafikler</h4>
+              <p>Günlük, haftalık odak sürelerin ve seri (streak) durumun</p>
+            </div>
+            <span class="mitem-badge">📊 Analiz</span>
+          </div>
+
+          <div class="menu-feature-item" id="mitem-profile">
+            <div class="mitem-icon profile-bg"><i data-lucide="user"></i></div>
+            <div class="mitem-info">
+              <h4>Profilim & Unvanlar</h4>
+              <p>Rozetlerin, başarım kartların ve oyuncu bilgilerin</p>
+            </div>
+            <span class="mitem-badge">👤 Profil</span>
+          </div>
+
+          <div class="menu-feature-item" id="mitem-zen">
+            <div class="mitem-icon zen-bg"><i data-lucide="maximize-2"></i></div>
+            <div class="mitem-info">
+              <h4>Zen Odaklanma Modu</h4>
+              <p>Tüm dikkat dağıtıcıları gizle ve tam ekranda odaklan</p>
+            </div>
+            <span class="mitem-badge">✨ Zen Modu</span>
+          </div>
+
+          <div class="menu-feature-item" id="mitem-settings">
+            <div class="mitem-icon settings-bg"><i data-lucide="settings"></i></div>
+            <div class="mitem-info">
+              <h4>Uygulama Ayarları</h4>
+              <p>Zamanlayıcı süreleri, alarm sesleri ve tema seçenekleri</p>
+            </div>
+            <span class="mitem-badge">⚙️ Ayarlar</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobil & Masaüstü Yüzen Alt Gezinme Çubuğu (Bottom Navigation Bar) -->
+  <nav class="bottom-nav-bar glass">
+    <button class="nav-item active" id="nav-btn-timer" data-nav="timer">
+      <i data-lucide="clock"></i>
+      <span>Sayaç</span>
+    </button>
+    <button class="nav-item" id="nav-btn-tasks" data-nav="tasks">
+      <i data-lucide="check-square"></i>
+      <span>Görevler</span>
+    </button>
+    <button class="nav-item" id="nav-btn-pet" data-nav="pet">
+      <i data-lucide="heart"></i>
+      <span>Pomo-Pet</span>
+    </button>
+    <button class="nav-item" id="nav-btn-stats" data-nav="stats">
+      <i data-lucide="bar-chart-2"></i>
+      <span>Raporlar</span>
+    </button>
+    <button class="nav-item" id="nav-btn-menu" data-nav="menu">
+      <i data-lucide="grid"></i>
+      <span>Menü</span>
+    </button>
+  </nav>
+
+  <!-- Zen Modundan Çıkış Butonu -->
+  <button id="btn-exit-zen" class="exit-zen-btn hidden" title="Zen Modundan Çık">
+    <i data-lucide="minimize-2"></i> <span>Zen Modundan Çık</span>
+  </button>
+
+  <!-- JavaScript Kodları -->
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
